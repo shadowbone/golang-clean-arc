@@ -1,0 +1,39 @@
+GET  http://localhost:3000 HTTP/1.1
+Content-Type: application/json
+
+###
+GET http://localhost:3000/api/users HTTP/1.1
+Content-Type: application/json
+
+###
+POST http://localhost:3000/api/users HTTP/1.1
+Content-Type: application/json
+
+{
+    "nama": "Budi sudarsono",
+    "email": "budi@gmail.com",
+    "Role": "Backend Eng"
+}
+
+###
+GET http://localhost:3000/api/users/01a00eef-ad50-7ac2-9e50-993cbab6cfb2 HTTP/1.1
+Content-Type: application/json
+
+
+
+###
+GET http://localhost:3000/api/products HTTP/1.1
+Content-Type: application/json
+
+###
+GET http://localhost:3000/api/products/01a00ef0-dd20-7904-8cb2-797b644dfcd0 HTTP/1.1
+Content-Type: application/json
+
+###
+POST http://localhost:3000/api/products HTTP/1.1
+Content-Type: application/json
+
+{
+    "nama": "Sembako",
+    "harga" : 100000
+}

@@ -1,0 +1,42 @@
+name: rest-api-golang
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: db-rest-api-golang
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-db_golang}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      TZ: UTC
+      PGTZ: UTC
+    command:
+      - "postgres"
+      - "-c"
+      - "timezone=UTC"
+      - "-c"
+      - "log_timezone=UTC"
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    networks:
+      - dbnet
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    shm_size: 256mb
+    stop_grace_period: 1m
+
+networks:
+  dbnet:
+    name: rest-api-golang-net
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: rest-api-golang-pgdata
