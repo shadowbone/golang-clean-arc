@@ -18,7 +18,7 @@ services:
       - "-c"
       - "log_timezone=UTC"
     ports:
-      - "127.0.0.1:${DB_PORT:-5433}:5432"
+      - "${DB_PORT:-5433}:5432"
     networks:
       - dbnet
     volumes:
