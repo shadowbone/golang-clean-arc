@@ -16,7 +16,10 @@ func NewProductUseCase(repo ProductRepository) *ProductUseCase {
 	return &ProductUseCase{repo: repo}
 }
 
-func (p *ProductUseCase) GetAllProduct(ctx context.Context, pag repository.Pagination) (repository.Page[Product], error) {
+func (p *ProductUseCase) GetAllProduct(
+	ctx context.Context,
+	pag repository.Pagination,
+) (repository.Page[Product], error) {
 	pag.Normalize()
 	return p.repo.FindAll(ctx, pag)
 }

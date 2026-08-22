@@ -24,7 +24,10 @@ func NewUserRepository(db *pgxpool.Pool) UserRepository {
 	return &DBUserRepository{db: db}
 }
 
-func (d *DBUserRepository) FindAll(ctx context.Context, p repository.Pagination) (repository.Page[User], error) {
+func (d *DBUserRepository) FindAll(
+	ctx context.Context,
+	p repository.Pagination,
+) (repository.Page[User], error) {
 	const countQ = `SELECT COUNT(*) FROM users`
 
 	var total int64

@@ -23,7 +23,10 @@ func NewProductRepository(db *pgxpool.Pool) ProductRepository {
 	return &DBProductRepository{db: db}
 }
 
-func (d *DBProductRepository) FindAll(ctx context.Context, p repository.Pagination) (repository.Page[Product], error) {
+func (d *DBProductRepository) FindAll(
+	ctx context.Context,
+	p repository.Pagination,
+) (repository.Page[Product], error) {
 	const countQ = `SELECT COUNT(*) FROM products`
 
 	var total int64
