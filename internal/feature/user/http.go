@@ -19,7 +19,10 @@ func NewUserHandler(uc *UserUseCase) *UserHandler {
 }
 
 func (h *UserHandler) FetchAll(c fiber.Ctx) error {
-	var p repository.Pagination
+	p := repository.Pagination{
+		Page:  fiber.Query(c, "page", 0),
+		Limit: fiber.Query(c, "limit", 0),
+	}
 	users, err := h.usecase.GetAllUser(c.Context(), p)
 	if err != nil {
 		return err
