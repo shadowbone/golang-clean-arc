@@ -6,6 +6,20 @@ GET http://localhost:3000/api/users HTTP/1.1
 Content-Type: application/json
 
 ###
+GET http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses HTTP/1.1
+Content-Type: application/json
+
+###
+POST http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses HTTP/1.1
+Content-Type: application/json
+
+{
+    "label": "Rumah",
+    "street": "Jl. Boscha Asrama Denma",
+    "city": "Bandung"
+}
+
+###
 POST http://localhost:3000/api/users HTTP/1.1
 Content-Type: application/json
 

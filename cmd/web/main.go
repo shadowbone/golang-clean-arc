@@ -56,7 +56,13 @@ func run() error {
 		return c.SendString("Setyabudi Dwisandi Arifin")
 	})
 
-	routes.SetUpRouter(app.Group("/api"), provider.Deps{DB: pool})
+	routes.SetUpRouter(
+		app.Group("/api"),
+		provider.Deps{
+			DB: pool,
+			Tx: database.NewTransactor(pool),
+		},
+	)
 
 	// Server jalan di goroutine terpisah
 	serverErr := make(chan error, 1)
