@@ -16,7 +16,8 @@ type fakeUserRepo struct {
 	createFn   func(ctx context.Context, u User) (User, error)
 	findByIDFn func(ctx context.Context, id uuid.UUID) (User, error)
 	findAllFn  func(ctx context.Context) ([]User, error)
-
+	updateFn   func(ctx context.Context, id uuid.UUID, u User) (User, error)
+	deleteFn   func(ctx context.Context, id uuid.UUID) error
 	// Perekam untuk verifikasi
 	createCalled bool
 	createInput  User
@@ -44,6 +45,21 @@ func (f *fakeUserRepo) FindAll(ctx context.Context) ([]User, error) {
 		return f.findAllFn(ctx)
 	}
 	return nil, nil
+}
+
+func (f *fakeUserRepo) Update(ctx context.Context, id uuid.UUID, u User) (User, error) {
+	if f.updateFn != nil {
+		return f.updateFn(ctx, id, u)
+	}
+	u.ID = id
+	return u, nil
+}
+
+func (f *fakeUserRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	if f.deleteFn != nil {
+		return f.deleteFn(ctx, id)
+	}
+	return nil
 }
 
 func TestCreateUser_Validasi(t *testing.T) {
@@ -135,5 +151,19 @@ func TestCreateUser_ErrorDariRepo(t *testing.T) {
 
 	if !errors.Is(err, repository.ErrDuplicateKey) {
 		t.Fatalf("mau ErrDuplicateKey, dapat %v", err)
+	}
+}
+
+func TestDeleteUser_NotFound(t *testing.T) {
+	repo := &fakeUserRepo{
+		deleteFn: func(ctx context.Context, id uuid.UUID) error {
+			return repository.ErrNotFound
+		},
+	}
+	uc := NewUserUseCase(repo)
+
+	err := uc.DeleteUser(context.Background(), uuid.New())
+	if !errors.Is(err, repository.ErrNotFound) {
+		t.Fatalf("mau ErrNotFound, dapat %v", err)
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -77,4 +78,47 @@ func (d *DBUserRepository) Create(ctx context.Context, in User) (User, error) {
 	}
 
 	return u, nil
+}
+
+func (d *DBUserRepository) Update(ctx context.Context, id uuid.UUID, in User) (User, error) {
+	const q = `
+		UPDATE users
+		SET name = $2, email = $3, role = $4, updated_at = now()
+		WHERE id = $1
+		RETURNING id, email, name, role, created_at, updated_at`
+
+	var u User
+	err := d.db.QueryRow(ctx, q, id, in.Nama, in.Email, in.Role).Scan(
+		&u.ID, &u.Email, &u.Nama, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, repository.ErrNotFound
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return User{}, repository.ErrDuplicateKey
+		}
+
+		return User{}, fmt.Errorf("update user: %w", err)
+	}
+
+	return u, nil
+}
+
+func (d *DBUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	const q = `DELETE FROM users WHERE id = $1`
+
+	tag, err := d.db.Exec(ctx, q, id)
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return repository.ErrNotFound
+	}
+
+	return nil
 }

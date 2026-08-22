@@ -38,3 +38,22 @@ func (u *UserUseCase) CreateUser(ctx context.Context, user User) (User, error) {
 
 	return u.repo.Create(ctx, user)
 }
+
+func (u *UserUseCase) UpdateUser(ctx context.Context, id uuid.UUID, in User) (User, error) {
+	in.Email = strings.TrimSpace(in.Email)
+	in.Nama = strings.TrimSpace(in.Nama)
+
+	if in.Email == "" {
+		return User{}, repository.Validationf("email tidak boleh kosong")
+	}
+
+	if in.Nama == "" {
+		return User{}, repository.Validationf("nama tidak boleh kosong")
+	}
+
+	return u.repo.Update(ctx, id, in)
+}
+
+func (u *UserUseCase) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	return u.repo.Delete(ctx, id)
+}

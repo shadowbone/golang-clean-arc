@@ -53,3 +53,35 @@ func (h *UserHandler) Store(c fiber.Ctx) error {
 
 	return response.Created(c, result)
 }
+
+func (h *UserHandler) Update(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "id harus berupa UUID yang valid")
+	}
+
+	var input User
+	if err := c.Bind().Body(&input); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	result, err := h.usecase.UpdateUser(c.Context(), id, input)
+	if err != nil {
+		return err
+	}
+
+	return response.OK(c, result)
+}
+
+func (h *UserHandler) Destroy(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "id harus berupa UUID yang valid")
+	}
+
+	if err := h.usecase.DeleteUser(c.Context(), id); err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

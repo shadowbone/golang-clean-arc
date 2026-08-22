@@ -20,4 +20,6 @@ func (Router) Register(router fiber.Router, prov provider.Deps) {
 	api.Get("/", handler.FetchAll)
 	api.Get("/:id", handler.FetchById)
 	api.Post("/", handler.Store)
+	api.Put("/:id", handler.Update)
+	api.Delete("/:id", handler.Destroy)
 }

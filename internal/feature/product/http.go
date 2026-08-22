@@ -51,3 +51,35 @@ func (h *ProductHandler) Store(c fiber.Ctx) error {
 
 	return response.Created(c, result)
 }
+
+func (h *ProductHandler) Update(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "id harus berupa UUID yang benar")
+	}
+
+	var input Product
+	if err := c.Bind().Body(&input); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	}
+
+	result, err := h.usecase.UpdateProduct(c.Context(), id, input)
+	if err != nil {
+		return err
+	}
+
+	return response.OK(c, result)
+}
+
+func (h *ProductHandler) Destroy(c fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "id harus berupa UUID yang valid")
+	}
+
+	if err := h.usecase.DeleteProduct(c.Context(), id); err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}

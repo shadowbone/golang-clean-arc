@@ -36,3 +36,20 @@ func (p *ProductUseCase) CreateProduct(ctx context.Context, in Product) (Product
 
 	return p.repo.Create(ctx, in)
 }
+
+func (p *ProductUseCase) UpdateProduct(ctx context.Context, id uuid.UUID, in Product) (Product, error) {
+	in.Nama = strings.TrimSpace(in.Nama)
+
+	if in.Nama == "" {
+		return Product{}, repository.Validationf("nama tidak boleh kosong")
+	}
+	if in.Harga <= 0 {
+		return Product{}, repository.Validationf("harga harus lebih dari 0")
+	}
+
+	return p.repo.Update(ctx, id, in)
+}
+
+func (p *ProductUseCase) DeleteProduct(ctx context.Context, id uuid.UUID) error {
+	return p.repo.Delete(ctx, id)
+}

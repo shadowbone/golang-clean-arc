@@ -79,3 +79,40 @@ func (d *DBProductRepository) Create(ctx context.Context, in Product) (Product, 
 
 	return p, nil
 }
+
+func (d *DBProductRepository) Update(ctx context.Context, id uuid.UUID, in Product) (Product, error) {
+	const q = `
+		UPDATE products
+		SET name = $2, price = $3, updated_at = now()
+		WHERE id = $1
+		RETURNING id, name, price, created_at, updated_at`
+
+	var p Product
+	err := d.db.QueryRow(ctx, q, id, in.Nama, in.Harga).Scan(
+		&p.ID, &p.Nama, &p.Harga, &p.CreatedAt, &p.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Product{}, repository.ErrNotFound
+		}
+		return Product{}, fmt.Errorf("update product: %w", err)
+	}
+
+	return p, nil
+}
+
+func (d *DBProductRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	const q = `DELETE FROM products WHERE id = $1`
+
+	tag, err := d.db.Exec(ctx, q, id)
+	if err != nil {
+		return fmt.Errorf("delete product: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return repository.ErrNotFound
+	}
+
+	return nil
+}
