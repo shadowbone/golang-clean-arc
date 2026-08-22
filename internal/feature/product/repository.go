@@ -23,24 +23,30 @@ func NewProductRepository(db *pgxpool.Pool) ProductRepository {
 	return &DBProductRepository{db: db}
 }
 
-func (d *DBProductRepository) FindAll(ctx context.Context) ([]Product, error) {
+func (d *DBProductRepository) FindAll(ctx context.Context, p repository.Pagination) (repository.Page[Product], error) {
+	const countQ = `SELECT COUNT(*) FROM products`
+
+	var total int64
+	if err := d.db.QueryRow(ctx, countQ).Scan(&total); err != nil {
+		return repository.Page[Product]{}, fmt.Errorf("count product: %w", err)
+	}
 	const q = `
 		select id, name, price, created_at, updated_at
 		FROM products
 		ORDER BY id DESC
-		LIMIT 100`
-	rows, err := d.db.Query(ctx, q)
+		LIMIT $1 OFFSET $2`
+	rows, err := d.db.Query(ctx, q, p.Limit, p.Offset())
 	if err != nil {
-		return nil, fmt.Errorf("query products: %w", err)
+		return repository.Page[Product]{}, fmt.Errorf("query products: %w", err)
 	}
 	defer rows.Close()
 
 	items, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[Product])
 	if err != nil {
-		return nil, fmt.Errorf("collect products: %w", err)
+		return repository.Page[Product]{}, fmt.Errorf("collect products: %w", err)
 	}
 
-	return items, nil
+	return repository.NewPage(items, total, p), nil
 }
 
 func (d *DBProductRepository) FindById(ctx context.Context, id uuid.UUID) (Product, error) {

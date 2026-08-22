@@ -15,7 +15,7 @@ type Querier interface {
 }
 
 type BaseRepository[T any] interface {
-	FindAll(ctx context.Context) ([]T, error)
+	FindAll(ctx context.Context, p Pagination) (Page[T], error)
 	FindById(ctx context.Context, id uuid.UUID) (T, error)
 	Create(ctx context.Context, entity T) (T, error)
 	Update(ctx context.Context, id uuid.UUID, entity T) (T, error)

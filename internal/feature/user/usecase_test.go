@@ -15,7 +15,7 @@ type fakeUserRepo struct {
 	// Perilaku yang bisa diatur per test
 	createFn   func(ctx context.Context, u User) (User, error)
 	findByIDFn func(ctx context.Context, id uuid.UUID) (User, error)
-	findAllFn  func(ctx context.Context) ([]User, error)
+	findAllFn  func(ctx context.Context, p repository.Pagination) (repository.Page[User], error)
 	updateFn   func(ctx context.Context, id uuid.UUID, u User) (User, error)
 	deleteFn   func(ctx context.Context, id uuid.UUID) error
 	// Perekam untuk verifikasi
@@ -40,11 +40,11 @@ func (f *fakeUserRepo) FindById(ctx context.Context, id uuid.UUID) (User, error)
 	return User{}, repository.ErrNotFound
 }
 
-func (f *fakeUserRepo) FindAll(ctx context.Context) ([]User, error) {
+func (f *fakeUserRepo) FindAll(ctx context.Context, p repository.Pagination) (repository.Page[User], error) {
 	if f.findAllFn != nil {
-		return f.findAllFn(ctx)
+		return f.findAllFn(ctx, p)
 	}
-	return nil, nil
+	return repository.NewPage([]User{}, 0, p), nil
 }
 
 func (f *fakeUserRepo) Update(ctx context.Context, id uuid.UUID, u User) (User, error) {
@@ -165,5 +165,39 @@ func TestDeleteUser_NotFound(t *testing.T) {
 	err := uc.DeleteUser(context.Background(), uuid.New())
 	if !errors.Is(err, repository.ErrNotFound) {
 		t.Fatalf("mau ErrNotFound, dapat %v", err)
+	}
+}
+
+func TestGetAllUser_NormalisasiPagination(t *testing.T) {
+	tests := []struct {
+		nama      string
+		input     repository.Pagination
+		wantPage  int
+		wantLimit int
+	}{
+		{"kosong pakai default", repository.Pagination{}, 1, 20},
+		{"page negatif jadi 1", repository.Pagination{Page: -5, Limit: 10}, 1, 10},
+		{"limit melebihi max dipotong", repository.Pagination{Page: 2, Limit: 5000}, 2, 100},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.nama, func(t *testing.T) {
+			var got repository.Pagination
+
+			repo := &fakeUserRepo{
+				findAllFn: func(ctx context.Context, p repository.Pagination) (repository.Page[User], error) {
+					got = p
+					return repository.NewPage([]User{}, 0, p), nil
+				},
+			}
+
+			uc := NewUserUseCase(repo)
+			uc.GetAllUser(context.Background(), tc.input)
+
+			if got.Page != tc.wantPage || got.Limit != tc.wantLimit {
+				t.Errorf("page=%d limit=%d, mau page=%d limit=%d",
+					got.Page, got.Limit, tc.wantPage, tc.wantLimit)
+			}
+		})
 	}
 }

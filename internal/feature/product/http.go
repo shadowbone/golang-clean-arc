@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
+	"golang-rest-api/internal/repository"
 	"golang-rest-api/internal/response"
 )
 
@@ -16,7 +17,11 @@ func NewProductHandler(uc *ProductUseCase) *ProductHandler {
 }
 
 func (h *ProductHandler) FetchAll(c fiber.Ctx) error {
-	items, err := h.usecase.GetAllProduct(c.Context())
+	p := repository.Pagination{
+		Page:  fiber.Query(c, "page", 0),
+		Limit: fiber.Query(c, "limit", 0),
+	}
+	items, err := h.usecase.GetAllProduct(c.Context(), p)
 	if err != nil {
 		return err
 	}

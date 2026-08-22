@@ -1,6 +1,7 @@
 package user
 
 import (
+	"golang-rest-api/internal/repository"
 	"golang-rest-api/internal/response"
 
 	"github.com/google/uuid"
@@ -18,7 +19,8 @@ func NewUserHandler(uc *UserUseCase) *UserHandler {
 }
 
 func (h *UserHandler) FetchAll(c fiber.Ctx) error {
-	users, err := h.usecase.GetAllUser(c.Context())
+	var p repository.Pagination
+	users, err := h.usecase.GetAllUser(c.Context(), p)
 	if err != nil {
 		return err
 	}

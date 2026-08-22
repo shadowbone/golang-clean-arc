@@ -24,24 +24,30 @@ func NewUserRepository(db *pgxpool.Pool) UserRepository {
 	return &DBUserRepository{db: db}
 }
 
-func (d *DBUserRepository) FindAll(ctx context.Context) ([]User, error) {
+func (d *DBUserRepository) FindAll(ctx context.Context, p repository.Pagination) (repository.Page[User], error) {
+	const countQ = `SELECT COUNT(*) FROM users`
+
+	var total int64
+	if err := d.db.QueryRow(ctx, countQ).Scan(&total); err != nil {
+		return repository.Page[User]{}, fmt.Errorf("count user: %w", err)
+	}
 	const q = `
 		select id, email, name, role, created_at, updated_at
 		FROM users
 		ORDER BY id DESC
-		LIMIT 100`
-	rows, err := d.db.Query(ctx, q)
+		LIMIT $1 OFFSET $2`
+	rows, err := d.db.Query(ctx, q, p.Limit, p.Offset())
 	if err != nil {
-		return nil, fmt.Errorf("query users: %w", err)
+		return repository.Page[User]{}, fmt.Errorf("query users: %w", err)
 	}
 	defer rows.Close()
 
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByNameLax[User])
 	if err != nil {
-		return nil, fmt.Errorf("collect users: %w", err)
+		return repository.Page[User]{}, fmt.Errorf("collect users: %w", err)
 	}
 
-	return users, nil
+	return repository.NewPage(users, total, p), nil
 }
 func (d *DBUserRepository) FindById(ctx context.Context, id uuid.UUID) (User, error) {
 	const q = `

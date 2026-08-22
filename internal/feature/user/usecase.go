@@ -16,8 +16,9 @@ func NewUserUseCase(repo UserRepository) *UserUseCase {
 	return &UserUseCase{repo: repo}
 }
 
-func (u *UserUseCase) GetAllUser(ctx context.Context) ([]User, error) {
-	return u.repo.FindAll(ctx)
+func (u *UserUseCase) GetAllUser(ctx context.Context, p repository.Pagination) (repository.Page[User], error) {
+	p.Normalize()
+	return u.repo.FindAll(ctx, p)
 }
 
 func (u *UserUseCase) FindByIdUser(ctx context.Context, id uuid.UUID) (User, error) {
