@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ProductRepository interface {
@@ -16,11 +15,11 @@ type ProductRepository interface {
 }
 
 type DBProductRepository struct {
-	db *pgxpool.Pool
+	repository.DB
 }
 
-func NewProductRepository(db *pgxpool.Pool) ProductRepository {
-	return &DBProductRepository{db: db}
+func NewProductRepository(pool repository.Querier) ProductRepository {
+	return &DBProductRepository{DB: repository.NewDB(pool)}
 }
 
 func (d *DBProductRepository) FindAll(
@@ -30,7 +29,7 @@ func (d *DBProductRepository) FindAll(
 	const countQ = `SELECT COUNT(*) FROM products`
 
 	var total int64
-	if err := d.db.QueryRow(ctx, countQ).Scan(&total); err != nil {
+	if err := d.Q(ctx).QueryRow(ctx, countQ).Scan(&total); err != nil {
 		return repository.Page[Product]{}, fmt.Errorf("count product: %w", err)
 	}
 	const q = `
@@ -38,7 +37,7 @@ func (d *DBProductRepository) FindAll(
 		FROM products
 		ORDER BY id DESC
 		LIMIT $1 OFFSET $2`
-	rows, err := d.db.Query(ctx, q, p.Limit, p.Offset())
+	rows, err := d.Q(ctx).Query(ctx, q, p.Limit, p.Offset())
 	if err != nil {
 		return repository.Page[Product]{}, fmt.Errorf("query products: %w", err)
 	}
@@ -59,7 +58,7 @@ func (d *DBProductRepository) FindById(ctx context.Context, id uuid.UUID) (Produ
 		WHERE id = $1`
 
 	var p Product
-	err := d.db.QueryRow(ctx, q, id).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, id).Scan(
 		&p.ID, &p.Nama, &p.Harga, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -79,7 +78,7 @@ func (d *DBProductRepository) Create(ctx context.Context, in Product) (Product, 
 		RETURNING id, name, price, created_at, updated_at`
 
 	var p Product
-	err := d.db.QueryRow(ctx, q, in.Nama, in.Harga).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, in.Nama, in.Harga).Scan(
 		&p.ID, &p.Nama, &p.Harga, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -97,7 +96,7 @@ func (d *DBProductRepository) Update(ctx context.Context, id uuid.UUID, in Produ
 		RETURNING id, name, price, created_at, updated_at`
 
 	var p Product
-	err := d.db.QueryRow(ctx, q, id, in.Nama, in.Harga).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, id, in.Nama, in.Harga).Scan(
 		&p.ID, &p.Nama, &p.Harga, &p.CreatedAt, &p.UpdatedAt,
 	)
 
@@ -114,7 +113,7 @@ func (d *DBProductRepository) Update(ctx context.Context, id uuid.UUID, in Produ
 func (d *DBProductRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	const q = `DELETE FROM products WHERE id = $1`
 
-	tag, err := d.db.Exec(ctx, q, id)
+	tag, err := d.Q(ctx).Exec(ctx, q, id)
 	if err != nil {
 		return fmt.Errorf("delete product: %w", err)
 	}

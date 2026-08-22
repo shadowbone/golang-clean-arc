@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepository interface {
@@ -17,11 +16,11 @@ type UserRepository interface {
 }
 
 type DBUserRepository struct {
-	db *pgxpool.Pool
+	repository.DB
 }
 
-func NewUserRepository(db *pgxpool.Pool) UserRepository {
-	return &DBUserRepository{db: db}
+func NewUserRepository(pool repository.Querier) UserRepository {
+	return &DBUserRepository{DB: repository.NewDB(pool)}
 }
 
 func (d *DBUserRepository) FindAll(
@@ -31,7 +30,7 @@ func (d *DBUserRepository) FindAll(
 	const countQ = `SELECT COUNT(*) FROM users`
 
 	var total int64
-	if err := d.db.QueryRow(ctx, countQ).Scan(&total); err != nil {
+	if err := d.Q(ctx).QueryRow(ctx, countQ).Scan(&total); err != nil {
 		return repository.Page[User]{}, fmt.Errorf("count user: %w", err)
 	}
 	const q = `
@@ -39,7 +38,7 @@ func (d *DBUserRepository) FindAll(
 		FROM users
 		ORDER BY id DESC
 		LIMIT $1 OFFSET $2`
-	rows, err := d.db.Query(ctx, q, p.Limit, p.Offset())
+	rows, err := d.Q(ctx).Query(ctx, q, p.Limit, p.Offset())
 	if err != nil {
 		return repository.Page[User]{}, fmt.Errorf("query users: %w", err)
 	}
@@ -59,7 +58,7 @@ func (d *DBUserRepository) FindById(ctx context.Context, id uuid.UUID) (User, er
 		WHERE id = $1`
 
 	var u User
-	err := d.db.QueryRow(ctx, q, id).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, id).Scan(
 		&u.ID, &u.Email, &u.Nama, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
@@ -79,10 +78,14 @@ func (d *DBUserRepository) Create(ctx context.Context, in User) (User, error) {
 		RETURNING id, email, name, role, created_at, updated_at`
 
 	var u User
-	err := d.db.QueryRow(ctx, q, in.Email, in.Nama, in.Role).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, in.Email, in.Nama, in.Role).Scan(
 		&u.ID, &u.Email, &u.Nama, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return User{}, repository.ErrDuplicateKey
+		}
 		return User{}, fmt.Errorf("create user: %w", err)
 	}
 
@@ -97,7 +100,7 @@ func (d *DBUserRepository) Update(ctx context.Context, id uuid.UUID, in User) (U
 		RETURNING id, email, name, role, created_at, updated_at`
 
 	var u User
-	err := d.db.QueryRow(ctx, q, id, in.Nama, in.Email, in.Role).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, id, in.Nama, in.Email, in.Role).Scan(
 		&u.ID, &u.Email, &u.Nama, &u.Role, &u.CreatedAt, &u.UpdatedAt,
 	)
 
@@ -120,7 +123,7 @@ func (d *DBUserRepository) Update(ctx context.Context, id uuid.UUID, in User) (U
 func (d *DBUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	const q = `DELETE FROM users WHERE id = $1`
 
-	tag, err := d.db.Exec(ctx, q, id)
+	tag, err := d.Q(ctx).Exec(ctx, q, id)
 	if err != nil {
 		return fmt.Errorf("delete user: %w", err)
 	}
