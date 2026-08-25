@@ -1,0 +1,35 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
+    - contextcheck
+    - errorlint
+    - misspell
+    - revive
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      exclude-functions:
+        - (github.com/jackc/pgx/v5.Tx).Rollback
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: true
+
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+
+issues:
+  max-same-issues: 0

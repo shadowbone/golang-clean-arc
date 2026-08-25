@@ -135,7 +135,21 @@ help:
 		| awk -F'|' '{printf "  \033[36m%-18s\033[0m %s\n", $$2, $$1}' \
 		| sed 's/://'
 
+lint:
+	@command -v golangci-lint >/dev/null 2>&1 || { \
+		echo "📦 Install golangci-lint..."; \
+		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
+	}
+	golangci-lint run
+
+## jalankan semua pemeriksaan seperti di CI
+check: fmt lint test
+	@echo "✅ Semua pemeriksaan lolos"
+
+## test dengan race detector, seperti di CI
+test-race:
+	go test -race ./...
 
 .PHONY: setup env deps db-up db-down db-reset db-logs db-shell wait-db \
         migrate-up migrate-down migrate-status migrate-create migrate-force \
-        dev run build test test-cover fmt tidy clean help
+        dev run build test test-cover fmt tidy clean help lint check test-race
