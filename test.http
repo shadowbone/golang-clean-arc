@@ -6,20 +6,6 @@ GET http://localhost:3000/api/users HTTP/1.1
 Content-Type: application/json
 
 ###
-GET http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses HTTP/1.1
-Content-Type: application/json
-
-###
-POST http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses HTTP/1.1
-Content-Type: application/json
-
-{
-    "label": "Rumah",
-    "street": "Jl. Boscha Asrama Denma",
-    "city": "Bandung"
-}
-
-###
 POST http://localhost:3000/api/users HTTP/1.1
 Content-Type: application/json
 
@@ -48,7 +34,42 @@ DELETE  http://localhost:3000/api/users/01a01011-9c01-76bc-92ce-86ce5cba4942 HTT
 Content-Type: application/json
 
 
+
+### Addres
+GET http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses HTTP/1.1
+Content-Type: application/json
+
 ###
+POST http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses HTTP/1.1
+Content-Type: application/json
+
+{
+    "label": "Rumah",
+    "street": "Jl. Boscha Asrama Denma",
+    "city": "Bandung"
+}
+
+###
+PUT http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses/01a02a5e-4f50-7986-8bac-ca0fb2050b8e HTTP/1.1
+Content-Type: application/json
+
+{
+    "label": "Rumah",
+    "street": "Jl. Kumala gardern 1231",
+    "city": "Bandung"
+}
+
+###
+PATCH http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses/01a02a5e-4f50-7986-8bac-ca0fb2050b8e/default HTTP/1.1
+Content-Type: application/json
+
+
+###
+DELETE  http://localhost:3000/api/users/01a029c1-a754-7855-95e0-486890d707e1/addresses/01a02a5e-4ea7-7213-8f60-8289fab55737 HTTP/1.1
+Content-Type: application/json
+
+
+### Product
 GET http://localhost:3000/api/products HTTP/1.1
 Content-Type: application/json
 

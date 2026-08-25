@@ -20,7 +20,7 @@ func (Router) Register(router fiber.Router, prov provider.Deps) {
 	api := router.Group("/users")
 	api.Get("/:userId/addresses", handler.FindById)
 	api.Post("/:userId/addresses", handler.Store)
-	// PUT    /api/users/:userId/addresses/:id
-	// DELETE /api/users/:userId/addresses/:id
-	// PATCH  /api/users/:userId/addresses/:id/default
+	api.Put("/:userId/addresses/:id", handler.Update)
+	api.Delete("/:userId/addresses/:id", handler.Destroy)
+	api.Patch("/:userId/addresses/:id/default", handler.SetDefault)
 }

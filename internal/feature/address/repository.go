@@ -13,8 +13,12 @@ import (
 
 type AddressRepository interface {
 	Create(ctx context.Context, a Address) (Address, error)
+	Update(ctx context.Context, userId, id uuid.UUID, entity Address) (Address, error)
+	Delete(ctx context.Context, userId, id uuid.UUID) error
 	CountByUserID(ctx context.Context, userID uuid.UUID) (int64, error)
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]Address, error)
+	UnsetDefault(ctx context.Context, userId uuid.UUID) error
+	SetDefault(ctx context.Context, userId, id uuid.UUID) error
 }
 
 type DBAddress struct {
@@ -68,4 +72,75 @@ func (d *DBAddress) FindByUserID(ctx context.Context, userID uuid.UUID) ([]Addre
 		return []Address{}, fmt.Errorf("collect address by user :%w", err)
 	}
 	return address, nil
+}
+
+func (d *DBAddress) Update(ctx context.Context, userId, id uuid.UUID, entity Address) (Address, error) {
+	var a Address
+	err := d.Q(ctx).QueryRow(ctx, `
+		UPDATE addresses
+		SET label = $3, street = $4, city = $5, updated_at = now()
+		WHERE user_id = $1 and id = $2
+		RETURNING id, user_id, label, street, city,created_at, updated_at
+	`, userId, id, entity.Label, entity.Street, entity.City).Scan(
+		&a.ID, &a.UserID, &a.Label, &a.Street, &a.City, &a.CreatedAt, &a.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Address{}, repository.ErrNotFound
+		}
+
+		return Address{}, repository.ErrDuplicateKey
+	}
+
+	return a, nil
+}
+
+func (d *DBAddress) Delete(ctx context.Context, userId, id uuid.UUID) error {
+	tag, err := d.Q(ctx).Exec(ctx, `
+		DELETE FROM addresses where user_id = $1 and id = $2
+	`, userId, id)
+
+	if err != nil {
+		return fmt.Errorf("delete addresses : %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return repository.ErrNotFound
+	}
+
+	return nil
+}
+
+func (d *DBAddress) UnsetDefault(ctx context.Context, userId uuid.UUID) error {
+	result, err := d.Q(ctx).Exec(ctx, `
+		UPDATE addresses SET is_default = false, updated_at = now()
+		WHERE user_id = $1`, userId)
+
+	if err != nil {
+		return fmt.Errorf("reset default addresses : %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return repository.ErrNotFound
+	}
+
+	return nil
+}
+
+func (d *DBAddress) SetDefault(ctx context.Context, userId, id uuid.UUID) error {
+	result, err := d.Q(ctx).Exec(ctx, `
+		UPDATE addresses SET is_default = true, updated_at = now()
+		WHERE id = $1 AND user_id = $2
+	`, id, userId)
+
+	if err != nil {
+		return fmt.Errorf("set address default : %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return repository.ErrNotFound
+	}
+
+	return nil
 }
