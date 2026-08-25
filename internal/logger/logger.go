@@ -1,17 +1,13 @@
 package logger
 
 import (
+	"golang-rest-api/internal/config"
 	"log/slog"
 	"os"
 	"strings"
 )
 
-type Config struct {
-	Level  string
-	Format string
-}
-
-func New(cfg Config) *slog.Logger {
+func New(cfg config.LogConfig) *slog.Logger {
 	var level slog.Level
 	switch strings.ToLower(cfg.Level) {
 	case "debug":

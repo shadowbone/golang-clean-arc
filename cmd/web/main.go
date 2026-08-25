@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"golang-rest-api/internal/config"
 	"golang-rest-api/internal/database"
 	"golang-rest-api/internal/provider"
 	"golang-rest-api/internal/response"
@@ -12,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -34,20 +34,24 @@ func main() {
 
 func run() error {
 	_ = godotenv.Load()
-	logapps := applog.New(applog.Config{
-		Level:  getEnv("LOG_LEVEL", "info"),
-		Format: getEnv("LOG_FORMAT", "json"),
-	})
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	logapps := applog.New(cfg.Log)
 	slog.SetDefault(logapps)
 	ctx := context.Background()
 
-	pool, err := database.NewPool(ctx)
+	pool, err := database.NewPool(ctx, cfg.DB)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
 
-	log.Println("database terhubung")
+	logapps.Info("database terhubung",
+		slog.String("host", cfg.DB.Host),
+		slog.String("db", cfg.DB.Name),
+	)
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: response.ErrorHandler,
@@ -57,7 +61,7 @@ func run() error {
 	app.Use(recover.New())
 	app.Use(applog.Middleware(
 		logapps,
-		bool(getEnvBool("LOG_REQUEST_BODY", false)),
+		cfg.Log.RequestBody,
 	))
 	// nanti bisa setting disini
 	app.Use(cors.New(cors.Config{}))
@@ -75,15 +79,16 @@ func run() error {
 		},
 	)
 
+	addr := ":" + cfg.App.Port
 	// Server jalan di goroutine terpisah
 	serverErr := make(chan error, 1)
 	go func() {
-		if err := app.Listen(":3000"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := app.Listen(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
 	}()
 
-	log.Println("server jalan di :3000")
+	logapps.Info("server jalan", slog.String("addr", addr), slog.String("env", cfg.App.Env))
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
@@ -102,25 +107,6 @@ func run() error {
 		return err
 	}
 
-	log.Println("server ditutup, menutup koneksi database")
+	logapps.Info("server ditutup, menutup koneksi database")
 	return nil
-}
-
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
-
-func getEnvBool(key string, def bool) bool {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	b, err := strconv.ParseBool(v)
-	if err != nil {
-		return def
-	}
-	return b
 }

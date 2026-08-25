@@ -3,43 +3,47 @@ package database
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/url"
-	"os"
+	"golang-rest-api/internal/config"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	pgxuuid "github.com/vgarvardt/pgx-google-uuid/v5"
 )
 
-func NewPool(c context.Context) (*pgxpool.Pool, error) {
-	dsn, err := BuildDSN()
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := pgxpool.ParseConfig(dsn)
+func NewPool(c context.Context, cfg config.DBConfig) (*pgxpool.Pool, error) {
+	poolCfg, err := pgxpool.ParseConfig(cfg.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("parse DSN: %w", err)
 	}
 
-	cfg.MaxConns = 10
-	cfg.MinConns = 2
-	cfg.MaxConnLifetime = time.Hour
-	cfg.MaxConnIdleTime = 30 * time.Minute
-	cfg.HealthCheckPeriod = time.Minute
-	cfg.ConnConfig.ConnectTimeout = 5 * time.Second
-	cfg.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
+	poolCfg.MaxConns = cfg.MaxConns
+	poolCfg.MinConns = cfg.MinConns
+	poolCfg.MaxConnLifetime = cfg.MaxConnLifetime
+	poolCfg.MaxConnIdleTime = cfg.MaxConnIdleTime
+	poolCfg.HealthCheckPeriod = time.Minute
+	poolCfg.ConnConfig.ConnectTimeout = cfg.ConnectTimeout
+
+	poolCfg.AfterConnect = func(ctx context.Context, c *pgx.Conn) error {
 		pgxuuid.Register(c.TypeMap())
 		return nil
 	}
-	pool, err := pgxpool.NewWithConfig(c, cfg)
+
+	if cfg.TraceQuery {
+		poolCfg.ConnConfig.Tracer = &tracelog.TraceLog{
+			Logger:   &slogAdapter{log: slog.Default()},
+			LogLevel: tracelog.LogLevelDebug,
+		}
+	}
+
+	pool, err := pgxpool.NewWithConfig(c, poolCfg)
 	if err != nil {
 		return nil, fmt.Errorf("buat pool:%w", err)
 	}
 
-	pingCtx, cancel := context.WithTimeout(c, 5*time.Second)
-
+	pingCtx, cancel := context.WithTimeout(c, cfg.ConnectTimeout)
 	defer cancel()
 
 	if err := pool.Ping(pingCtx); err != nil {
@@ -50,41 +54,14 @@ func NewPool(c context.Context) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func BuildDSN() (string, error) {
-	user := os.Getenv("POSTGRES_USER")
-	pass := os.Getenv("POSTGRES_PASSWORD")
-	host := getEnv("DB_HOST", "127.0.0.1")
-	port := getEnv("DB_PORT", "5433")
-	name := os.Getenv("POSTGRES_DB")
-	ssl := getEnv("DB_SSL", "disable")
-
-	for k, v := range map[string]string{
-		"POSTGRES_USER":     user,
-		"POSTGRES_PASSWORD": pass,
-		"POSTGRES_DB":       name,
-	} {
-		if v == "" {
-			return "", fmt.Errorf("env %s wajib diisi", k)
-		}
-	}
-
-	q := url.Values{}
-	q.Set("sslmode", ssl)
-
-	u := url.URL{
-		Scheme:   "postgres",
-		User:     url.UserPassword(user, pass),
-		Host:     net.JoinHostPort(host, port),
-		Path:     "/" + name,
-		RawQuery: q.Encode(),
-	}
-
-	return u.String(), nil
+type slogAdapter struct {
+	log *slog.Logger
 }
 
-func getEnv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
+func (a *slogAdapter) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
+	attrs := make([]any, 0, len(data))
+	for k, v := range data {
+		attrs = append(attrs, slog.Any(k, v))
 	}
-	return def
+	a.log.Debug(msg, attrs...)
 }
