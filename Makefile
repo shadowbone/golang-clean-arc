@@ -134,12 +134,10 @@ help:
 		| paste - - -d'|' \
 		| awk -F'|' '{printf "  \033[36m%-18s\033[0m %s\n", $$2, $$1}' \
 		| sed 's/://'
-
+GOLANGCI_VERSION = v2.13.1
 lint:
-	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "📦 Install golangci-lint..."; \
-		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
-	}
+	@command -v golangci-lint >/dev/null 2>&1 || \
+		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_VERSION)
 	golangci-lint run
 
 ## jalankan semua pemeriksaan seperti di CI
