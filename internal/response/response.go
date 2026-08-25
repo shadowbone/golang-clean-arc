@@ -1,9 +1,9 @@
 package response
 
 import (
-	"errors"
-	"golang-rest-api/internal/repository"
-	"log"
+	"golang-rest-api/internal/apperror"
+	"golang-rest-api/internal/logger"
+	"log/slog"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -24,23 +24,15 @@ func Error(c fiber.Ctx, code int, msg string) error {
 }
 
 func ErrorHandler(c fiber.Ctx, err error) error {
-	switch {
-	case errors.Is(err, repository.ErrNotFound):
-		return Error(c, fiber.StatusNotFound, err.Error())
+	code := apperror.StatusFor(err)
 
-	case errors.Is(err, repository.ErrDuplicateKey):
-		return Error(c, fiber.StatusConflict, err.Error())
-
-	case errors.Is(err, repository.ErrValidation):
-		return Error(c, fiber.StatusUnprocessableEntity, err.Error())
+	msg := err.Error()
+	if code == fiber.StatusInternalServerError {
+		logger.FromContext(c.Context()).Error("unhandled error",
+			slog.String("error", err.Error()),
+		)
+		msg = "terjadi kesalahan internal"
 	}
 
-	var fe *fiber.Error
-	if errors.As(err, &fe) {
-		return Error(c, fe.Code, fe.Message)
-	}
-
-	// Error tak terduga: log detailnya, sembunyikan dari client
-	log.Printf("[ERROR] %s %s: %v", c.Method(), c.Path(), err)
-	return Error(c, fiber.StatusInternalServerError, "terjadi kesalahan internal")
+	return Error(c, code, msg)
 }

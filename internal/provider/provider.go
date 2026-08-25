@@ -2,6 +2,7 @@ package provider
 
 import (
 	"golang-rest-api/internal/repository"
+	"log/slog"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -9,8 +10,9 @@ import (
 
 // disini untuk mendaftaran depedensi yg nantinya akan dibutuhkan
 type Deps struct {
-	DB *pgxpool.Pool
-	Tx repository.Transactor
+	DB  *pgxpool.Pool
+	Tx  repository.Transactor
+	Log *slog.Logger
 }
 
 type AppServiceProvider interface {

@@ -8,18 +8,21 @@ import (
 	"golang-rest-api/internal/response"
 	"golang-rest-api/internal/routes"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
-	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/joho/godotenv"
+
+	applog "golang-rest-api/internal/logger"
 )
 
 func main() {
@@ -31,7 +34,11 @@ func main() {
 
 func run() error {
 	_ = godotenv.Load()
-
+	logapps := applog.New(applog.Config{
+		Level:  getEnv("LOG_LEVEL", "info"),
+		Format: getEnv("LOG_FORMAT", "json"),
+	})
+	slog.SetDefault(logapps)
 	ctx := context.Background()
 
 	pool, err := database.NewPool(ctx)
@@ -48,7 +55,10 @@ func run() error {
 
 	app.Use(requestid.New())
 	app.Use(recover.New())
-	app.Use(logger.New())
+	app.Use(applog.Middleware(
+		logapps,
+		bool(getEnvBool("LOG_REQUEST_BODY", false)),
+	))
 	// nanti bisa setting disini
 	app.Use(cors.New(cors.Config{}))
 
@@ -59,8 +69,9 @@ func run() error {
 	routes.SetUpRouter(
 		app.Group("/api"),
 		provider.Deps{
-			DB: pool,
-			Tx: database.NewTransactor(pool),
+			DB:  pool,
+			Tx:  database.NewTransactor(pool),
+			Log: logapps,
 		},
 	)
 
@@ -93,4 +104,23 @@ func run() error {
 
 	log.Println("server ditutup, menutup koneksi database")
 	return nil
+}
+
+func getEnv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
+}
+
+func getEnvBool(key string, def bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return def
+	}
+	return b
 }
