@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"golang-rest-api/internal/config"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -61,6 +62,11 @@ type slogAdapter struct {
 func (a *slogAdapter) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
 	attrs := make([]any, 0, len(data))
 	for k, v := range data {
+		if k == "sql" {
+			if s, ok := v.(string); ok {
+				v = strings.Join(strings.Fields(s), " ")
+			}
+		}
 		attrs = append(attrs, slog.Any(k, v))
 	}
 	a.log.Debug(msg, attrs...)

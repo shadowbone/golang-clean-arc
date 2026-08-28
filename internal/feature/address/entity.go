@@ -1,7 +1,7 @@
 package address
 
 import (
-	"time"
+	"golang-rest-api/internal/repository"
 
 	"github.com/google/uuid"
 )
@@ -13,6 +13,5 @@ type Address struct {
 	Street    string    `json:"street" db:"street"`
 	City      string    `json:"city" db:"city"`
 	IsDefault bool      `json:"is_default" db:"is_default"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	repository.AuditTrail
 }
