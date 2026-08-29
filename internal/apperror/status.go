@@ -16,6 +16,12 @@ func StatusFor(err error) int {
 		return fiber.StatusConflict
 	case errors.Is(err, repository.ErrValidation):
 		return fiber.StatusUnprocessableEntity
+	case errors.Is(err, repository.ErrUnauthorized),
+		errors.Is(err, repository.ErrInvalidCredentials),
+		errors.Is(err, repository.ErrInvalidToken),
+		errors.Is(err, repository.ErrTokenExpired),
+		errors.Is(err, repository.ErrTokenRevoked):
+		return fiber.StatusUnauthorized
 	}
 
 	var fe *fiber.Error

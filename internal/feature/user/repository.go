@@ -13,6 +13,7 @@ import (
 
 type UserRepository interface {
 	repository.BaseRepository[User]
+	FindByEmail(ctx context.Context, email string) (User, error)
 }
 
 type DBUserRepository struct {
@@ -133,4 +134,23 @@ func (d *DBUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (d *DBUserRepository) FindByEmail(ctx context.Context, email string) (User, error) {
+	const q = `
+		SELECT id, email, name, role, created_at, updated_at
+		FROM users
+		WHERE lower(email) = lower($1)`
+
+	var u User
+	err := d.Q(ctx).QueryRow(ctx, q, email).Scan(
+		&u.ID, &u.Email, &u.Nama, &u.Role, &u.CreatedAt, &u.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, repository.ErrNotFound
+		}
+		return User{}, fmt.Errorf("find user by email: %w", err)
+	}
+	return u, nil
 }

@@ -13,11 +13,12 @@ import (
 // fakeUserRepo memenuhi interface UserRepository tanpa database
 type fakeUserRepo struct {
 	// Perilaku yang bisa diatur per test
-	createFn   func(ctx context.Context, u User) (User, error)
-	findByIDFn func(ctx context.Context, id uuid.UUID) (User, error)
-	findAllFn  func(ctx context.Context, p repository.Pagination) (repository.Page[User], error)
-	updateFn   func(ctx context.Context, id uuid.UUID, u User) (User, error)
-	deleteFn   func(ctx context.Context, id uuid.UUID) error
+	createFn      func(ctx context.Context, u User) (User, error)
+	findByIDFn    func(ctx context.Context, id uuid.UUID) (User, error)
+	findAllFn     func(ctx context.Context, p repository.Pagination) (repository.Page[User], error)
+	updateFn      func(ctx context.Context, id uuid.UUID, u User) (User, error)
+	deleteFn      func(ctx context.Context, id uuid.UUID) error
+	findByEmailFn func(ctx context.Context, email string) (User, error)
 	// Perekam untuk verifikasi
 	createCalled bool
 	createInput  User
@@ -60,6 +61,13 @@ func (f *fakeUserRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		return f.deleteFn(ctx, id)
 	}
 	return nil
+}
+
+func (f *fakeUserRepo) FindByEmail(ctx context.Context, email string) (User, error) {
+	if f.findByEmailFn != nil {
+		return f.findByEmailFn(ctx, email)
+	}
+	return User{}, nil
 }
 
 func TestCreateUser_Validasi(t *testing.T) {

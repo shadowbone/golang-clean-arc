@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	App AppConfig
-	DB  DBConfig
-	Log LogConfig
+	App  AppConfig
+	DB   DBConfig
+	Log  LogConfig
+	Auth AuthConfig
 }
 
 func Load() (*Config, error) {
@@ -39,6 +40,12 @@ func Load() (*Config, error) {
 			Level:       l.str("LOG_LEVEL", "info"),
 			Format:      l.str("LOG_FORMAT", "json"),
 			RequestBody: l.boolean("LOG_REQUEST_BODY", false),
+		},
+		Auth: AuthConfig{
+			JWTSecret:       l.required("JWT_SECRET"),
+			AccessTokenTTL:  l.duration("ACCESS_TOKEN_TTL", 15*time.Minute),
+			RefreshTokenTTL: l.duration("REFRESH_TOKEN_TTL", 15*24*time.Hour),
+			BcryptCost:      l.integer("BYCRYPT_COST", 12),
 		},
 	}
 	if len(l.missing) > 0 {
@@ -72,7 +79,6 @@ func (c *Config) validate() error {
 			c.DB.MaxConns, c.DB.MinConns)
 	}
 
-	// Peringatan keamanan untuk produksi
 	if c.App.IsProduction() {
 		if c.DB.SSLMode == "disable" {
 			return fmt.Errorf("DB_SSL tidak boleh 'disable' di production")
@@ -80,6 +86,14 @@ func (c *Config) validate() error {
 		if c.Log.RequestBody {
 			return fmt.Errorf("LOG_REQUEST_BODY tidak boleh aktif di production")
 		}
+	}
+
+	if len(c.Auth.JWTSecret) < 32 {
+		return fmt.Errorf("JWT_SECRET minimal 32 karakter")
+	}
+
+	if c.Auth.BcryptCost < 10 || c.Auth.BcryptCost > 15 {
+		return fmt.Errorf("BCRYPT_COST harus diantara 10 dan 15")
 	}
 
 	return nil
