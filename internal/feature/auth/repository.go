@@ -66,13 +66,12 @@ func (d *DBAuthRepository) FindCredentialByUserID(ctx context.Context, userID uu
 
 func (d *DBAuthRepository) SaveRefreshToken(ctx context.Context, t RefreshToken) (RefreshToken, error) {
 	const q = `
-		INSERT INTO refresh_token (user_id, token_hash, expires_at)
+		INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
 		VALUES ($1, $2, $3)
-		RETURNING id, user_id, token_hash, expires_at, revoked_at, replaced_by, created_at
-	`
+		RETURNING id, user_id, token_hash, expires_at, revoked_at, replaced_by, created_at`
 
 	var out RefreshToken
-	err := d.Q(ctx).QueryRow(ctx, q, t.ID, t.TokenHash, t.ExpiresAt).Scan(
+	err := d.Q(ctx).QueryRow(ctx, q, t.UserID, t.TokenHash, t.ExpiresAt).Scan(
 		&out.ID, &out.UserID, &out.TokenHash, &out.ExpiresAt,
 		&out.RevokedAt, &out.ReplacedBy, &out.CreatedAt,
 	)

@@ -72,6 +72,7 @@ Content-Type: application/json
 ### Product
 GET http://localhost:3000/api/products HTTP/1.1
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWEwNTIxZi03ZmI4LTc0NjctOTZlYi1jZDI3ZDNiNjgwNmIiLCJleHAiOjE3ODgwODY0MzcsImlhdCI6MTc4ODA4NTUzNywianRpIjoiNDBlZmJmNTktMWYwNC00YmM4LThkOTMtNWFlNWZiMzJkYjEwIn0.OvVrHW3XS5GP5nRO0HVa1SKFwJMcOJA094VxgL9gOgg
 
 ###
 GET http://localhost:3000/api/products/01a01012-1b99-7b61-8dbe-f7849a1b2517 HTTP/1.1
@@ -98,3 +99,9 @@ Content-Type: application/json
 ###
 DELETE http://localhost:3000/api/products/01a01012-1b99-7b61-8dbe-f7849a1b2517 HTTP/1.1
 Content-Type: application/json
+
+
+### Auth
+GET http://localhost:3000/api/auth/me HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWEwNTIxZi03ZmI4LTc0NjctOTZlYi1jZDI3ZDNiNjgwNmIiLCJleHAiOjE3ODgwODUwOTEsImlhdCI6MTc4ODA4NDE5MSwianRpIjoiZGMyODNmYjEtODE2OC00OTczLWE5NzItMTVjNjQ0MDk1ZjczIn0.WEk8e4zB1FX6VJgLsGEXW6KznAiZVJ70YKXFKM7kjiY

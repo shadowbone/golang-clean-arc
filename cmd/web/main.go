@@ -5,6 +5,7 @@ import (
 	"errors"
 	"golang-rest-api/internal/config"
 	"golang-rest-api/internal/database"
+	"golang-rest-api/internal/feature/auth"
 	"golang-rest-api/internal/provider"
 	"golang-rest-api/internal/response"
 	"golang-rest-api/internal/routes"
@@ -70,12 +71,19 @@ func run() error {
 		return c.SendString("Setyabudi Dwisandi Arifin")
 	})
 
+	tokens := auth.NewTokenManager(
+		cfg.Auth.JWTSecret,
+		cfg.Auth.AccessTokenTTL,
+		cfg.Auth.RefreshTokenTTL,
+	)
+
 	routes.SetUpRouter(
 		app.Group("/api"),
 		provider.Deps{
-			DB:  pool,
-			Tx:  database.NewTransactor(pool),
-			Log: logapps,
+			DB:     pool,
+			Tx:     database.NewTransactor(pool),
+			Log:    logapps,
+			Tokens: tokens,
 		},
 	)
 

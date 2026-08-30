@@ -17,6 +17,7 @@ func (Router) Register(router fiber.Router, prov provider.Deps) {
 		),
 	)
 	api := router.Group("/products")
+	api.Use(provider.RequireAuth(prov.Tokens))
 	api.Get("/", handler.FetchAll)
 	api.Get("/:id", handler.FetchById)
 	api.Post("/", handler.Store)

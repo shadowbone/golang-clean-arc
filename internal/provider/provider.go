@@ -10,9 +10,10 @@ import (
 
 // disini untuk mendaftaran depedensi yg nantinya akan dibutuhkan
 type Deps struct {
-	DB  *pgxpool.Pool
-	Tx  repository.Transactor
-	Log *slog.Logger
+	DB     *pgxpool.Pool
+	Tx     repository.Transactor
+	Log    *slog.Logger
+	Tokens TokenVerifier
 }
 
 type AppServiceProvider interface {
