@@ -13,6 +13,7 @@ type DBConfig struct {
 	Password        string
 	Name            string
 	SSLMode         string
+	AppName         string
 	MaxConns        int32
 	MinConns        int32
 	MaxConnLifetime time.Duration
@@ -24,6 +25,10 @@ type DBConfig struct {
 func (d DBConfig) DSN() string {
 	q := url.Values{}
 	q.Set("sslmode", d.SSLMode)
+
+	if d.AppName != "" {
+		q.Set("application_name", d.AppName)
+	}
 
 	u := url.URL{
 		Scheme:   "postgres",

@@ -31,6 +31,7 @@ func Load() (*Config, error) {
 			Password:        l.required("POSTGRES_PASSWORD"),
 			Name:            l.required("POSTGRES_DB"),
 			SSLMode:         l.str("DB_SSL", "disable"),
+			AppName:         l.str("DB_APP_NAME", "api"),
 			MaxConns:        int32(l.integer("DB_MAX_CONNS", 10)),
 			MinConns:        int32(l.integer("DB_MIN_CONNS", 2)),
 			MaxConnLifetime: l.duration("DB_MAX_CONN_LIFETIME", time.Hour),

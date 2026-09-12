@@ -85,7 +85,11 @@ func run() error {
 			return err
 		}
 
-		defer redisClient.Close()
+		defer func() {
+			if err := redisClient.Close(); err != nil {
+				logapps.Warn("gagal menutup redis", slog.String("error", err.Error()))
+			}
+		}()
 
 		logapps.Info("redis terhubung", slog.String("addr", cfg.Redis.Addr))
 		limiter = cache.NewRedisLimiter(redisClient)

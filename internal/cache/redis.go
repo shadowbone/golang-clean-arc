@@ -24,7 +24,7 @@ func NewClient(ctx context.Context, cfg config.RedisConfig) (*redis.Client, erro
 	defer cancel()
 
 	if err := client.Ping(pingCtx).Err(); err != nil {
-		client.Close()
+		_ = client.Close()
 		return nil, fmt.Errorf("ping redis :%w", err)
 	}
 
