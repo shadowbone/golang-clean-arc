@@ -28,9 +28,21 @@ func (Router) Register(router fiber.Router, prov provider.Deps) {
 	)
 
 	api := router.Group("/auth")
-	api.Post("/register", handler.Register)
-	api.Post("/login", handler.Login)
-	api.Post("/refresh", handler.Refresh)
+
+	loginLimit := provider.RateLimit(prov.Limiter, "login",
+		prov.RateLimiter.LoginMax, prov.RateLimiter.LoginWindow)
+	registerLimit := provider.RateLimit(prov.Limiter, "register",
+		prov.RateLimiter.RegisterMax, prov.RateLimiter.RegisterWindow)
+
+	login := api.Group("")
+	login.Use(loginLimit)
+	login.Post("/login", handler.Login)
+	login.Post("/refresh", handler.Refresh)
+
+	reg := api.Group("")
+	reg.Use(registerLimit)
+	reg.Post("/register", handler.Register)
+
 	api.Post("/logout", handler.Logout)
 
 	protected := api.Group("")

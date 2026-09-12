@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"golang-rest-api/internal/cache"
 	"golang-rest-api/internal/config"
 	"golang-rest-api/internal/database"
 	"golang-rest-api/internal/feature/auth"
@@ -77,13 +78,28 @@ func run() error {
 		cfg.Auth.RefreshTokenTTL,
 	)
 
+	var limiter provider.RateLimiter = provider.NoopLimiter{}
+	if cfg.RateLimit.Enabled {
+		redisClient, err := cache.NewClient(ctx, cfg.Redis)
+		if err != nil {
+			return err
+		}
+
+		defer redisClient.Close()
+
+		logapps.Info("redis terhubung", slog.String("addr", cfg.Redis.Addr))
+		limiter = cache.NewRedisLimiter(redisClient)
+	}
+
 	routes.SetUpRouter(
 		app.Group("/api"),
 		provider.Deps{
-			DB:     pool,
-			Tx:     database.NewTransactor(pool),
-			Log:    logapps,
-			Tokens: tokens,
+			DB:          pool,
+			Tx:          database.NewTransactor(pool),
+			Log:         logapps,
+			Tokens:      tokens,
+			Limiter:     limiter,
+			RateLimiter: cfg.RateLimit,
 		},
 	)
 

@@ -7,10 +7,12 @@ import (
 )
 
 type Config struct {
-	App  AppConfig
-	DB   DBConfig
-	Log  LogConfig
-	Auth AuthConfig
+	App       AppConfig
+	DB        DBConfig
+	Log       LogConfig
+	Auth      AuthConfig
+	Redis     RedisConfig
+	RateLimit RateLimitingConfig
 }
 
 func Load() (*Config, error) {
@@ -46,6 +48,18 @@ func Load() (*Config, error) {
 			AccessTokenTTL:  l.duration("ACCESS_TOKEN_TTL", 15*time.Minute),
 			RefreshTokenTTL: l.duration("REFRESH_TOKEN_TTL", 15*24*time.Hour),
 			BcryptCost:      l.integer("BYCRYPT_COST", 12),
+		},
+		Redis: RedisConfig{
+			Addr:     l.str("REDIS_ADDR", "127.0.0.1:6380"),
+			Password: l.str("REDIS_PASSWORD", ""),
+			DB:       l.integer("REDIS_DB", 0),
+		},
+		RateLimit: RateLimitingConfig{
+			Enabled:        l.boolean("RATE_LIMIT_ENABLED", true),
+			LoginMax:       l.integer("RATE_LIMIT_LOGIN_MAX", 5),
+			LoginWindow:    l.duration("RATE_LIMIT_LOGIN_WINDOW", 15*time.Minute),
+			RegisterMax:    l.integer("RATE_LIMIT_REGISTER_MAX", 3),
+			RegisterWindow: l.duration("RATE_LIMIT_REGISTER_WINDOW", time.Hour),
 		},
 	}
 	if len(l.missing) > 0 {

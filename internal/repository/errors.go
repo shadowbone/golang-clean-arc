@@ -15,6 +15,7 @@ var (
 	ErrInvalidToken       = errors.New("token tidak valid")
 	ErrTokenExpired       = errors.New("token sudah kedaluwarsa")
 	ErrTokenRevoked       = errors.New("token sudah dicabut")
+	ErrTooManyRequests    = errors.New("terlalu banyak percobaan, coba lagi nanti")
 )
 
 func Validationf(format string, args ...any) error {

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"golang-rest-api/internal/config"
 	"golang-rest-api/internal/repository"
 	"log/slog"
 
@@ -10,10 +11,12 @@ import (
 
 // disini untuk mendaftaran depedensi yg nantinya akan dibutuhkan
 type Deps struct {
-	DB     *pgxpool.Pool
-	Tx     repository.Transactor
-	Log    *slog.Logger
-	Tokens TokenVerifier
+	DB          *pgxpool.Pool
+	Tx          repository.Transactor
+	Log         *slog.Logger
+	Tokens      TokenVerifier
+	Limiter     RateLimiter
+	RateLimiter config.RateLimitingConfig
 }
 
 type AppServiceProvider interface {

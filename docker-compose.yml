@@ -31,7 +31,23 @@ services:
       start_period: 30s
     shm_size: 256mb
     stop_grace_period: 1m
-
+  redis:
+    image: redis:7-alpine
+    container_name: cache-rest-api-golang
+    restart: unless-stopped
+    command: >-
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+    ports:
+      - "127.0.0.1:6380:6379"
+    networks: [dbnet]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 networks:
   dbnet:
     name: rest-api-golang-net

@@ -22,6 +22,8 @@ func StatusFor(err error) int {
 		errors.Is(err, repository.ErrTokenExpired),
 		errors.Is(err, repository.ErrTokenRevoked):
 		return fiber.StatusUnauthorized
+	case errors.Is(err, repository.ErrTooManyRequests):
+		return fiber.StatusTooManyRequests
 	}
 
 	var fe *fiber.Error
