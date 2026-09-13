@@ -61,7 +61,7 @@ func (d *DBOrderRepository) Create(ctx context.Context, o Order) (Order, error) 
 	for _, it := range o.Items {
 		it.OrderID = out.ID
 		if err := br.QueryRow().Scan(&it.ID); err != nil {
-			br.Close()
+			_ = br.Close()
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == "23503" {
 				return Order{}, repository.Validationf("produk tidak ditemukan")
