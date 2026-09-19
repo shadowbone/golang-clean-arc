@@ -97,7 +97,11 @@ func run() error {
 	app.Use(cors.New(cors.Config{}))
 
 	app.Get("/", func(c fiber.Ctx) error {
-		return c.SendString("Setyabudi Dwisandi Arifin")
+		return c.JSON(fiber.Map{
+			"app":     "golang-rest-api",
+			"version": version,
+			"commit":  commit,
+		})
 	})
 
 	tokens := auth.NewTokenManager(
