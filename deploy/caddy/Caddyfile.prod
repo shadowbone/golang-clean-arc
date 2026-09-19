@@ -1,0 +1,36 @@
+{
+	email admin@domain.com
+}
+
+api.domain.com {
+	reverse_proxy golang-rest-api-production-app:3000
+
+	encode gzip
+
+	log {
+		output stdout
+		format json
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		-Server
+	}
+}
+
+staging.domain.com {
+	reverse_proxy golang-rest-api-staging-app:3000
+
+	encode gzip
+
+	log {
+		output stdout
+		format json
+	}
+
+	basic_auth {
+		dev $2a$14$M88xeGDDC24vHOqTWkkPpulsoeE1zUeB89y0pfkrSgjE4GqobYgpe
+	}
+}
