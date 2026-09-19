@@ -1,0 +1,132 @@
+name: ${STACK_NAME}
+
+services:
+  app:
+    image: ${IMAGE}:${IMAGE_TAG}
+    container_name: ${STACK_NAME}-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      REDIS_ADDR: redis:6379
+      APP_PORT: "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    stop_grace_period: 1m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  migrate:
+    image: migrate/migrate:latest
+    profiles: [tools]
+    volumes:
+      - ../db/migrations:/migrations:ro
+    networks:
+      - internal
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+      - "up"
+
+  cleanup:
+    image: ${IMAGE}:${IMAGE_TAG}
+    entrypoint: ["/app/cleanup"]
+    profiles: [tools]
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+    networks:
+      - internal
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: ${STACK_NAME}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: UTC
+      PGTZ: UTC
+    command:
+      - "postgres"
+      - "-c"
+      - "timezone=UTC"
+      - "-c"
+      - "log_timezone=UTC"
+      - "-c"
+      - "log_min_duration_statement=2000"
+      - "-c"
+      - "log_lock_waits=on"
+      - "-c"
+      - "log_checkpoints=on"
+      - "-c"
+      - "log_autovacuum_min_duration=1000"
+      - "-c"
+      - "log_line_prefix=%t [%p]: user=%u,db=%d,app=%a,client=%h "
+      - "-c"
+      - "logging_collector=on"
+      - "-c"
+      - "log_directory=log"
+      - "-c"
+      - "log_filename=postgresql-%a.log"
+      - "-c"
+      - "log_rotation_age=1d"
+      - "-c"
+      - "log_truncate_on_rotation=on"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    shm_size: ${PG_SHM_SIZE:-256mb}
+    stop_grace_period: 1m
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${STACK_NAME}-redis
+    restart: unless-stopped
+    command: >-
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  internal:
+  proxy:
+    name: proxy
+    external: true
+
+volumes:
+  pgdata:
+  pglog:

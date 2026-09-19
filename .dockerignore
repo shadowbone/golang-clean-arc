@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+bin/
+tmp/
+*.md
+docs/
+coverage.out
+cover.out
+Makefile
+docker-compose.yml

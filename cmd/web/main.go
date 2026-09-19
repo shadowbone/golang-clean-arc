@@ -27,6 +27,11 @@ import (
 	applog "golang-rest-api/internal/logger"
 )
 
+var (
+	version = "dev"
+	commit  = "unknown"
+)
+
 func main() {
 	if err := run(); err != nil {
 		log.Fatalf("fatal: %v", err)
@@ -50,10 +55,23 @@ func run() error {
 	}
 	defer pool.Close()
 
+	logapps.Info("aplikasi dimulai",
+		slog.String("version", version),
+		slog.String("commit", commit),
+		slog.String("env", cfg.App.Env),
+	)
+
 	logapps.Info("database terhubung",
 		slog.String("host", cfg.DB.Host),
 		slog.String("db", cfg.DB.Name),
 	)
+
+	if cfg.App.IsProduction() && cfg.DB.AllowInsecure {
+		logapps.Warn("koneksi DB tanpa SSL di production",
+			slog.String("db_host", cfg.DB.Host),
+			slog.String("alasan", "ALLOW_INSECURE_DB=true"),
+		)
+	}
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler: response.ErrorHandler,

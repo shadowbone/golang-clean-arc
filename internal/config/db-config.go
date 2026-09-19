@@ -14,6 +14,7 @@ type DBConfig struct {
 	Name            string
 	SSLMode         string
 	AppName         string
+	AllowInsecure   bool
 	MaxConns        int32
 	MinConns        int32
 	MaxConnLifetime time.Duration

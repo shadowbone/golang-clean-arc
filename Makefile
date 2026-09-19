@@ -3,7 +3,9 @@ export
 
 DB_URL = postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(POSTGRES_DB)?sslmode=$(DB_SSL)
 MIGRATE = migrate -path db/migrations -database "$(DB_URL)"
-
+GOLANGCI_VERSION = v2.13.1
+IMAGE = golang-rest-api
+VERSION ?= dev
 ## ============ SETUP ============
 
 
@@ -134,7 +136,7 @@ help:
 		| paste - - -d'|' \
 		| awk -F'|' '{printf "  \033[36m%-18s\033[0m %s\n", $$2, $$1}' \
 		| sed 's/://'
-GOLANGCI_VERSION = v2.13.1
+
 lint:
 	@command -v golangci-lint >/dev/null 2>&1 || \
 		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_VERSION)
@@ -148,6 +150,19 @@ check: fmt lint test
 test-race:
 	go test -race ./...
 
+## Build Docker
+docker-build:
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$$(git rev-parse --short HEAD) \
+		-t $(IMAGE):$(VERSION) .
+
+## check ukuran dan user image
+docker-inspect:
+	@docker images $(IMAGE):$(VERSION)
+	@docker run --rm --entrypoint sh $(IMAGE):$(VERSION) -c "id"
+
 .PHONY: setup env deps db-up db-down db-reset db-logs db-shell wait-db \
         migrate-up migrate-down migrate-status migrate-create migrate-force \
-        dev run build test test-cover fmt tidy clean help lint check test-race
+        dev run build test test-cover fmt tidy clean help lint check test-race \
+		docker-build docker-inspect

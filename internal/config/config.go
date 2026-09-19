@@ -38,6 +38,7 @@ func Load() (*Config, error) {
 			MaxConnIdleTime: l.duration("DB_MAX_CONN_IDLE", 30*time.Minute),
 			ConnectTimeout:  l.duration("DB_CONNECT_TIMEOUT", 5*time.Second),
 			TraceQuery:      l.boolean("DB_TRACE_QUERY", false),
+			AllowInsecure:   l.boolean("ALLOW_INSECURE_DB", false),
 		},
 		Log: LogConfig{
 			Level:       l.str("LOG_LEVEL", "info"),
@@ -95,8 +96,8 @@ func (c *Config) validate() error {
 	}
 
 	if c.App.IsProduction() {
-		if c.DB.SSLMode == "disable" {
-			return fmt.Errorf("DB_SSL tidak boleh 'disable' di production")
+		if c.DB.SSLMode == "disable" && !c.DB.AllowInsecure {
+			return fmt.Errorf("DB_SSL tidak boleh 'disable' di production atau coba set ALLOW_INSECURE_DB=true")
 		}
 		if c.Log.RequestBody {
 			return fmt.Errorf("LOG_REQUEST_BODY tidak boleh aktif di production")
