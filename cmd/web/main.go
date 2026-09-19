@@ -73,9 +73,19 @@ func run() error {
 		)
 	}
 
-	app := fiber.New(fiber.Config{
+	fiberCfg := fiber.Config{
 		ErrorHandler: response.ErrorHandler,
-	})
+	}
+
+	if len(cfg.App.TrustedProxies) > 0 {
+		fiberCfg.TrustProxy = true
+		fiberCfg.TrustProxyConfig = fiber.TrustProxyConfig{
+			Proxies: cfg.App.TrustedProxies,
+		}
+		fiberCfg.ProxyHeader = fiber.HeaderXForwardedFor
+	}
+
+	app := fiber.New(fiberCfg)
 
 	app.Use(requestid.New())
 	app.Use(recover.New())

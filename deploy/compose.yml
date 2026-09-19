@@ -17,8 +17,9 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - internal
-      - proxy
+      internal:
+      web:
+        ipv4_address: ${APP_IP}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s
@@ -36,7 +37,7 @@ services:
     image: migrate/migrate:latest
     profiles: [tools]
     volumes:
-      - ../db/migrations:/migrations:ro
+      - ./migrations:/migrations:ro
     networks:
       - internal
     command:
@@ -124,7 +125,7 @@ services:
 networks:
   internal:
   proxy:
-    name: proxy
+    name: web
     external: true
 
 volumes:

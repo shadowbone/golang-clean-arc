@@ -23,6 +23,7 @@ func Load() (*Config, error) {
 			Port:            l.str("APP_PORT", "3000"),
 			Env:             l.str("APP_ENV", "development"),
 			ShutdownTimeout: l.duration("SHUTDOWN_TIMEOUT", 20*time.Second),
+			TrustedProxies:  splitCSV(l.str("TRUSTED_PROXIES", "")),
 		},
 		DB: DBConfig{
 			Host:            l.str("DB_HOST", "127.0.0.1"),
