@@ -82,16 +82,6 @@ services:
       - "log_autovacuum_min_duration=1000"
       - "-c"
       - "log_line_prefix=%t [%p]: user=%u,db=%d,app=%a,client=%h "
-      - "-c"
-      - "logging_collector=on"
-      - "-c"
-      - "log_directory=log"
-      - "-c"
-      - "log_filename=postgresql-%a.log"
-      - "-c"
-      - "log_rotation_age=1d"
-      - "-c"
-      - "log_truncate_on_rotation=on"
     volumes:
       - pgdata:/var/lib/postgresql
     networks:
@@ -104,6 +94,11 @@ services:
       start_period: 30s
     shm_size: ${PG_SHM_SIZE:-256mb}
     stop_grace_period: 1m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -124,10 +119,9 @@ services:
 
 networks:
   internal:
-  proxy:
+  web:
     name: web
     external: true
 
 volumes:
   pgdata:
-  pglog:
