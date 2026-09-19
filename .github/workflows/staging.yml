@@ -1,0 +1,87 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+env:
+  GO_VERSION: '1.26'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login ke registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build dan push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          build-args: |
+            VERSION=staging-${{ github.run_number }}
+            COMMIT=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - uses: actions/checkout@v5
+
+      - name: Sinkronkan migration dan compose
+        run: |
+          scp -P ${{ secrets.SSH_PORT }} \
+            db/migrations/*.sql \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/golang-rest-api-staging/migrations/
+
+          scp -P ${{ secrets.SSH_PORT }} \
+            deploy/compose.yml deploy/deploy.sh \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/opt/golang-rest-api-staging/
+
+      - name: Jalankan deploy
+        run: |
+          ssh -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "chmod +x /opt/golang-rest-api-staging/deploy.sh && /opt/golang-rest-api-staging/deploy.sh"
+
+      - name: Verifikasi
+        run: |
+          sleep 5
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://test-golang.setyabudi.cloud/api/health)
+          echo "health: $code"
+          [ "$code" = "200" ] || exit 1
