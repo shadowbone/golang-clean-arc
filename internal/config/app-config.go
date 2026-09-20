@@ -10,6 +10,8 @@ type AppConfig struct {
 	Env             string
 	ShutdownTimeout time.Duration
 	TrustedProxies  []string
+	MetricsEnabled  bool
+	MetricsPath     string
 }
 
 func (a AppConfig) IsProduction() bool {

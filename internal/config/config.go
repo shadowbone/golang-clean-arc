@@ -24,6 +24,8 @@ func Load() (*Config, error) {
 			Env:             l.str("APP_ENV", "development"),
 			ShutdownTimeout: l.duration("SHUTDOWN_TIMEOUT", 20*time.Second),
 			TrustedProxies:  splitCSV(l.str("TRUSTED_PROXIES", "")),
+			MetricsEnabled:  l.boolean("METRICS_ENABLED", true),
+			MetricsPath:     l.str("METRICS_PATH", "/metrics"),
 		},
 		DB: DBConfig{
 			Host:            l.str("DB_HOST", "127.0.0.1"),

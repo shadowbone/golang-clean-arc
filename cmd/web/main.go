@@ -7,6 +7,7 @@ import (
 	"golang-rest-api/internal/config"
 	"golang-rest-api/internal/database"
 	"golang-rest-api/internal/feature/auth"
+	"golang-rest-api/internal/metrics"
 	"golang-rest-api/internal/provider"
 	"golang-rest-api/internal/response"
 	"golang-rest-api/internal/routes"
@@ -95,6 +96,19 @@ func run() error {
 	))
 	// nanti bisa setting disini
 	app.Use(cors.New(cors.Config{}))
+
+	var mtr *metrics.Metrics
+	if cfg.App.MetricsEnabled {
+		mtr = metrics.New("golang-rest-api", func() (int32, int32, int32) {
+			s := pool.Stat()
+
+			return s.TotalConns(), s.IdleConns(), s.AcquiredConns()
+		})
+		app.Use(metrics.Middleware(mtr))
+		app.Get(cfg.App.MetricsPath, metrics.Handler(mtr))
+
+		logapps.Info("metrics aktif", slog.String("path", cfg.App.MetricsPath))
+	}
 
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.JSON(fiber.Map{
