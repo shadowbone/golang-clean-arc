@@ -38,14 +38,14 @@ func New(serviceName string, poolStats PoolStatsFunc) *Metrics {
 		),
 		RequestTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "http_request_total",
+				Name: "http_requests_total",
 				Help: "Jumlah request HTTP",
 			},
 			[]string{"method", "route", "status"},
 		),
 		RequestInFlight: prometheus.NewGauge(
 			prometheus.GaugeOpts{
-				Name:        "http_request_in_flight",
+				Name:        "http_requests_in_flight",
 				Help:        "Jumlah request yang sedang diproses",
 				ConstLabels: labels,
 			},
